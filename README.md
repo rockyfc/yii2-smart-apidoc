@@ -1,5 +1,5 @@
 # yii2-smart-apidoc
-=========================
+------------
 yii2 api项目根据逻辑生成文档
 
 Installation
@@ -25,7 +25,16 @@ to the require section of your `composer.json` file.
 Usage
 -----
 
-Once the extension is installed, simply use it in your code by  :
+Once the extension is installed, simply use it in your config file by  :
 
 ```php
-<?= \smart\apidoc\AutoloadExample::widget(); ?>```
+'modules' => [
+        code ...
+        
+        'doc' => [
+            'class' => 'smart\apidoc\Module',
+        ],
+        
+        code ...
+    ],
+```
