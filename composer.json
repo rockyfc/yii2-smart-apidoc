@@ -1,0 +1,21 @@
+{
+    "name": "rockyfc/yii2-smart-apidoc",
+    "description": "yii2 api项目根据逻辑生成文档",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension"],
+    "license": "BSD-4-Clause",
+    "authors": [
+        {
+            "name": "rockyfc",
+            "email": "softfc@163.com"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "smart\\apidoc\\": "src"
+        }
+    }
+}
