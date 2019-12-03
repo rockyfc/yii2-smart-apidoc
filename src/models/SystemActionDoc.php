@@ -55,15 +55,6 @@ class SystemActionDoc extends ActionDoc
             return $title;
         }
 
-        //对于自定义函数，获取注释内的title标签内容
-        $arr = $this->parseComment($this->strComment, '@title');
-        $str = implode(',', $arr);
-
-        if ($str) {
-            return $str;
-        }
-
-
         return $this->actionId;
     }
 
@@ -195,7 +186,7 @@ class SystemActionDoc extends ActionDoc
     /**
      * @return null|\yii\db\ActiveRecord
      */
-    private function getModel()
+    protected function getModel()
     {
         $scenario = $this->getScenario();
         $actions = $this->controller->actions();
@@ -241,7 +232,7 @@ class SystemActionDoc extends ActionDoc
      * 获取当前action所使用的场景
      * @return string
      */
-    private function getScenario()
+    protected function getScenario()
     {
 
         $actions = $this->controller->actions();
@@ -260,192 +251,8 @@ class SystemActionDoc extends ActionDoc
 
     }
 
-    /**
-     * 获取输出参数
-     * @return array
-     */
-    public function getOutput()
-    {
-        $model = $this->getModel();
-        $attributes = $model->fields();
-
-        if (!$attributes) {
-            return [];
-        }
-
-        $output = [];
-        foreach ($attributes as $k => $attribute) {
-            if (is_array($attribute) or $attribute instanceof \Closure) {
-                $attribute = $k;
-            }
-            $output[$attribute] = $this->getAttributeRules($attribute);
-        }
 
 
-        /*$relationModels = $model->extraFields();
-        if (is_array($relationModels) and !empty($relationModels)) {
-            foreach ($relationModels as $k => $relationModelAlias) {
-                //$fields = $model->$relationModelAlias;
-                $output[$relationModelAlias] =  [
-                    'type' => $relationModelAlias,//数据类型
-                    'required' => false,//是否必须
-                    'range' => null,//可选值
-                    'default' => null,//默认值
-                    'comment' => $relationModelAlias.'对象'
-                ];
-
-
-            }
-        }*/
-
-        return $output;
-    }
-
-
-    /**
-     * 获取字段的介绍信息
-     * @param $attribute
-     * @return array
-     */
-    public function getAttributeRules($attribute)
-    {
-        $rules = new AttributeRules($this->getModel());
-        return $rules->getAttributeRules($attribute);
-
-
-        $docRules = [
-            'type' => null,//数据类型
-            'required' => false,//是否必须
-            'range' => null,//可选值
-            'default' => null,//默认值
-            'comment' => @$this->getModel()->attributeLabels()[$attribute]
-        ];
-
-        $scenario = $this->getModel()->getScenario();
-
-        //当这个属性是数组的时候，说明数组内部多个元素共同组成了一个属性，
-        //目前这种情况只出现在了联合主键中，所以，当$attribute是数组的时候，可以认为是主键
-        if (is_array($attribute)) {
-            $docRules = [
-                'type' => 'mixed',//数据类型
-                'required' => true,//是否必须
-                'range' => null,//可选值
-                'default' => null,//默认值
-                'comment' => '数据对象的ID'
-            ];
-
-            if (count($attribute) == 1) {
-                $docRules = $this->getAttributeRules($attribute[0]);
-                $docRules['required'] = true;
-                $docRules['comment'] = $attribute[0];
-            } else {
-                $docRules['comment'] = '联合主键，由';
-                foreach ($attribute as $v) {
-                    $docRules['comment'] .= $v . ' ';
-                }
-                $docRules['comment'] .= '的值组成，用逗号分隔。';
-            }
-
-            return $docRules;
-        }
-
-
-        //if (in_array($scenario, ['default']) and $attribute === 'fields') {
-        if ($attribute === 'fields') {
-
-            $fields = $this->getModel()->fields();
-            if ($fields) foreach ($fields as $k => &$field) {
-                if (is_array($field) or $field instanceof \Closure) {
-                    $field = $k;
-                }
-            }
-            return [
-                'type' => 'string',//数据类型
-                'required' => false,//是否必须
-                'range' => $fields,//可选值
-                'default' => '*',//默认值
-                'comment' => '要查询的字段，推荐按需查询。可以多选，多个字段用逗号分隔。'
-            ];
-        }
-
-        //if (in_array($scenario, ['default', 'view']) and $attribute === 'expand') {
-        if ($attribute === 'expand') {
-
-            $fields = $this->getModel()->extraFields();
-            $expand = [];
-            if ($fields) foreach ($fields as $k => $field) {
-                if (is_array($field) or $field instanceof \Closure or $field === null) {
-                    $expand[] = $k;
-                } else {
-                    $expand[] = $field;
-                }
-            }
-
-            return [
-                'type' => 'string',//数据类型
-                'required' => false,//是否必须
-                'range' => $expand,//可选值
-                'default' => null,//默认值
-                'comment' => '要关联查询的其他对象，推荐按需查询。可以多选，多个字段用逗号分隔。'
-            ];
-        }
-
-        //$validators = new ArrayObject();
-        foreach ($this->getModel()->rules() as $rule) {
-            if (is_array($rule) && isset($rule[0], $rule[1])) { // attributes, validator type
-                $rule[0] = (array)$rule[0];
-
-                if (!in_array($attribute, $rule[0])) {
-                    continue;
-                }
-
-                if ($rule[1] == 'default') {
-                    $docRules['default'] = $rule['value'];
-                } elseif ($rule[1] == 'required') {
-
-                    if (isset($rule['on'])) {
-                        $flag = false;
-                        if (is_array($rule['on'])) {
-                            $flag = in_array($this->getModel()->getScenario(), $rule['on']);
-                        }
-
-                        if (is_string($rule['on'])) {
-                            $arr = explode(',', $rule['on']);
-                            $flag = in_array($this->getModel()->getScenario(), $arr);
-                        }
-
-                        if ($flag) {
-                            $docRules['required'] = true;
-                        }
-
-
-                    } else {
-
-
-                        if ($this->getModel()->getScenario() != 'default') {
-                            $docRules['required'] = true;
-                        }
-
-                    }
-                } elseif ($rule[1] == 'in') {
-                    $docRules['range'] = $rule['range'];
-                } elseif (in_array($rule[1], ['string'])) {
-                    $docRules['type'] = $rule[1];
-                    if (isset($rule['max'])) {
-                        $docRules['type'] .= " (" . $rule['max'] . ")";
-                    }
-                } elseif (in_array($rule[1], ['boolean', 'date', 'datetime', 'time', 'double', 'email', 'integer', 'number', 'string', 'array', 'file'])) {
-                    $docRules['type'] = $rule[1];
-                } elseif ($rule[1] == 'safe' or $rule[1] == 'filter') {
-                    //
-                } else {
-                    $docRules['comment'] .= '<br/><br/>验证规则：' . $rule[1];
-                }
-            }
-        }
-
-        return $docRules;
-    }
 
 
 }

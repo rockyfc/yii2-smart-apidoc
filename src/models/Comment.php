@@ -7,7 +7,7 @@ use phpDocumentor\Reflection\DocBlock;
 use phpDocumentor\Reflection\DocBlockFactory;
 
 /**
- * Class Comment
+ * 解析类中的注释
  * @package smart\apidoc\models
  */
 class Comment
@@ -23,48 +23,54 @@ class Comment
      */
     public function __construct($docComment)
     {
+        if (!$docComment) {
+            return '';
+        }
         $factory = DocBlockFactory::createInstance();
-        $this->docblock = $factory->create($docComment);
+        $this->docblock = $factory->create((String)$docComment);
     }
 
     /**
      * 获取注释中的标题信息
-     * @return string
+     * @return string|null
      */
     public function getSummary()
     {
-        return $this->docblock->getSummary();
+        if ($this->docblock) {
+            return $this->docblock->getSummary();
+        }
     }
 
     /**
      * 获取标题中的描述信息
-     * @return string
+     * @return string|null
      */
     public function getDescription()
     {
-        return $this->docblock->getDescription()->render();
+        if ($this->docblock) {
+            return $this->docblock->getDescription()->render();
+        }
     }
 
 
     /**
-     * @return DocBlock\Tag[]
+     * @return DocBlock\Tag[]|null
      */
     public function getTagSee()
     {
-        if ($this->docblock->hasTag('see')) {
+        if ($this->docblock and $this->docblock->hasTag('see')) {
             $seeTags = $this->docblock->getTagsByName('see');
-
             return $seeTags;
         }
     }
 
     /**
      * 获取@param标记的参数
-     * @return Fields[]
+     * @return Fields[]|null
      */
     public function getParamTag()
     {
-        if ($this->docblock->hasTag('param')) {
+        if ($this->docblock and $this->docblock->hasTag('param')) {
             $tags = $this->docblock->getTagsByName('param');
 
             if (!$tags) {

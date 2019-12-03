@@ -5,6 +5,10 @@ namespace smart\apidoc\models;
 
 use yii\base\Model;
 
+/**
+ * 解析model类中定义的rules规则，并且生成文档需要的格式
+ * @package smart\apidoc\models
+ */
 class AttributeRules
 {
     public $model;

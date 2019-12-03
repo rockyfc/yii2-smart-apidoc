@@ -72,8 +72,24 @@ use yii\widgets\Breadcrumbs;
         <p class="pull-right"><?= Yii::powered() ?></p>
     </div>
 </footer>
-
+<style>
+    .top {
+        position: fixed;
+        bottom: 100px;
+        right: 50px;
+    }
+</style>
+<a href="javascript:" class="top" onclick="smoothscroll()">返回顶部</a>
 <?php $this->endBody() ?>
 </body>
+<script>
+    function smoothscroll(){
+        var currentScroll = document.documentElement.scrollTop || document.body.scrollTop;
+        if (currentScroll > 0) {
+            window.requestAnimationFrame(smoothscroll);
+            window.scrollTo (0,currentScroll - (currentScroll/5));
+        }
+    }
+</script>
 </html>
 <?php $this->endPage() ?>

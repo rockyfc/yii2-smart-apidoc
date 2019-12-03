@@ -21,7 +21,6 @@ class DefaultController extends Controller
     }
 
 
-
     public function actionIndex()
     {
         /** @var $module \smart\apidoc\Module */
@@ -31,20 +30,33 @@ class DefaultController extends Controller
         $ApiDoc = new ApiDoc();
         $ApiDoc->skipModulesId = $module->skipModulesId;
 
-        $detail =  $ApiDoc->getAllApiDoc();
 
-        $modelsDoc = [];
-        if(!empty($module->entitiesNamespace)){
-            $modelsDoc = $ApiDoc->getAllModelsDoc($module->entitiesNamespace);
+        //获取接口列表
+        $apiList = $ApiDoc->getAllApiDoc();
+
+
+        //获取README.md
+        $readmeFileContent = '';
+        $readmeFile = \Yii::getAlias($module->readMeFile);
+        if ($readmeFile and file_exists($readmeFile)) {
+            $readmeFileContent = file_get_contents($readmeFile);
         }
 
-        return $this->render('index.php',[
-            'apiDetail' => $detail,
+        //获取实体对象列表
+        $modelsDoc = [];
+        if (!empty($module->entitiesNamespace)) {
+            $params = explode('\\', $module->entitiesNamespace);
+            array_shift($params);
+            $entitiesPath = \Yii::getAlias('@app') . '/' . implode('/', $params);
+            $modelsDoc = $ApiDoc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath);
+        }
+
+        return $this->render('index.php', [
+            'readmeFileContent' => $readmeFileContent,
+            'apiList' => $apiList,
             'modelsDoc' => $modelsDoc,
         ]);
     }
-
-
 
 
 }

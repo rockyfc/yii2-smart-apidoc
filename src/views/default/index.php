@@ -1,4 +1,4 @@
-<? /*=print_r($apiDetail,1);exit; */ ?>
+<? /*=print_r($apiList,1);exit; */ ?>
 <div class="container">
     <div class="row">
         <div class="col-lg-3">
@@ -23,8 +23,8 @@
             <div class="fc-menu border" id="fc-api" style="border: 1px solid #ddd">
 <!--                <p><h4>接口列表</h4></p>
 -->                <ul class="nav ">
-                    <?php foreach ($apiDetail as $controllerId => $controller): ?>
-                        <li><a href="#<?= md5($controllerId) ?>"><?= $controllerId ?>【<?= $controller['title'] ?>】</a>
+                    <?php foreach ($apiList as $controllerId => $controller): ?>
+                        <li><a href="#<?= md5($controllerId) ?>"><?= $controllerId ?><?= !empty($controller['title'])?"【".$controller['title']."】":null ?></a>
                             <ul>
                                 <?php foreach ($controller['actionList'] as $action): ?>
                                     <?php if($action != null ): ?>
@@ -65,20 +65,22 @@
         <div class="col-lg-9">
             <h1>前言</h1>
             <hr/>
-            <?php $content = file_get_contents(Yii::getAlias('@webroot') . '/../README.md');
-            echo str_ireplace("\n", '<br/>', $content);
+            <?php if(!empty($readmeFileContent)){
+                echo str_ireplace("\n", '<br/>', $readmeFileContent);
+            }
+
             ?>
 
 
             <hr/>
             <h1>接口列表</h1>
-            <?php foreach ($apiDetail as $controllerId => $controller): ?>
+            <?php foreach ($apiList as $controllerId => $controller): ?>
                 <?php foreach ($controller['actionList'] as $action): ?>
                     <a id="<?= md5($action['route']) ?>"></a>
                     <br/>
                     <?php if ($action != null): ?>
                         <p>
-                        <h3><a id="<?= md5($action['route']) ?>"><?= $action['title'] ?>【<?= $controller['title'] ?>】</a></h3>
+                        <h3><a id="<?= md5($action['route']) ?>"><?= $action['title'] ?><?= !empty($controller['title'])?"【".$controller['title']."】":null ?></a></h3>
 
                         说明：<?= $action['description'] ?><br/>
                         请求方式：<?= implode('，',$action['method']) ?><br/>

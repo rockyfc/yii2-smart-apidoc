@@ -2,7 +2,10 @@
 
 namespace smart\apidoc\models;
 
-
+/**
+ * 工具类
+ * @package smart\apidoc\models
+ */
 class Tools
 {
 

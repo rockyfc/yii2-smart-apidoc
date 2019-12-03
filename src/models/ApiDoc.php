@@ -3,12 +3,25 @@
 namespace smart\apidoc\models;
 
 
+/**
+ * 生成接口文档的主要逻辑类
+ * @package smart\apidoc\models
+ */
 class ApiDoc
 {
+    /**
+     * 生成接口文档的时候，需要屏蔽掉的module
+     * @var array
+     */
     public $skipModulesId = ['debug', 'gii'];
 
     static $data = [];
 
+
+    /**
+     * 获取api列表
+     * @return array
+     */
     public function getAllApiDoc()
     {
         $this->getControllers(function ($controller) {
@@ -16,7 +29,7 @@ class ApiDoc
             $key = $controller->module->id . '/' . $controller->id;
             $ControllerDoc = new ControllerDoc($controller);
             $title = $ControllerDoc->title();
-            if (preg_match('/未使用/', $title) or preg_match('/已弃用/', $title)) {
+            if ((preg_match('/未使用/', $title) or preg_match('/已弃用/', $title))) {
                 return;
             }
             static::$data[$key]['title'] = $title;
@@ -25,14 +38,27 @@ class ApiDoc
             //static::$data[] = $controller->id;
         });
 
+
+
         return static::$data;
 
     }
 
+    /**
+     * 获取model对象列表
+     * @param $namespace
+     * @param null $modelPath
+     * @return array
+     * @throws \Exception
+     */
     public function getAllModelsDoc($namespace, $modelPath = null)
     {
-        if ($modelPath == null) {
+        if (empty($modelPath)) {
             $modelPath = \Yii::getAlias('@app') . '/common/models';
+        }
+
+        if(!is_dir($modelPath)){
+            throw new \Exception($modelPath.'不存在');
         }
 
         $modelsDoc = [];
@@ -54,6 +80,11 @@ class ApiDoc
         return $modelsDoc;
     }
 
+
+    /**
+     * 获取所有的controller
+     * @param callable|null $callback
+     */
     private function getControllers(callable $callback = null)
     {
 
@@ -64,22 +95,23 @@ class ApiDoc
             }
 
             $this->getModuleControllers($moduleId, $callback);
-            //$ctrls = $this->getModuleControllers($moduleId,$callback);
-            //$this->_controllers = array_merge($this->_controllers, $ctrls);
-            //$this->_modulesId[] = $moduleId;
+
         }
-        //return $this->_controllers;
     }
 
+
+    /**
+     * 根据moduleId获取相应得controllers
+     * @param $moduleId
+     * @param callable $callback
+     */
     private function getModuleControllers($moduleId, callable $callback)
     {
         $list = [];
         if ($Module = \Yii::$app->getModule($moduleId, true)) {
 
             $namespace = $Module->controllerNamespace;
-            if (!preg_match('/^app.*/', $namespace) and !preg_match('/^api.*/', $namespace)) {
-                return [];
-            }
+
 
             $path = $Module->getControllerPath();
             $controllers = glob($path . '/*Controller.php');

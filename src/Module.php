@@ -23,6 +23,12 @@ class Module extends \yii\base\Module
      */
     public $entitiesNamespace = 'api\common\models';
 
+
+    /**
+     * @var string README.md文件的全路径
+     */
+    public $readMeFile;
+
     /**
      * {@inheritdoc}
      */

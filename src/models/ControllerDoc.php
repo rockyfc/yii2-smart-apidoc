@@ -26,9 +26,14 @@ class ControllerDoc
     public function title()
     {
         $ref = new \ReflectionClass($this->_ActiveController);
-        $comment = $ref->getDocComment();
-        return $this->parseComment($comment);
-        print_r($comment);exit;
+        $strComment = (String)$ref->getDocComment();
+
+        if(empty($strComment)){
+            return '';
+        }
+        $comment = new Comment($strComment);
+        return $comment->getSummary();
+
 
     }
 
@@ -61,7 +66,6 @@ class ControllerDoc
                 $actionDocs[$actionId] = $ActionDoc->doc();
                 continue;
             }
-
 
 
 

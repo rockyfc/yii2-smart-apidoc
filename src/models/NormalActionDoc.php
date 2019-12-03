@@ -2,6 +2,8 @@
 
 namespace smart\apidoc\models;
 
+use smart\apidoc\exceptions\NotFoundModelClassException;
+use yii\base\Model;
 use yii\rest\ActiveController;
 
 /**
@@ -73,7 +75,7 @@ class NormalActionDoc extends ActionDoc
      * 获取action参数
      * @return Fields[]
      */
-    public function getInput()
+/*    public function getInput()
     {
         $input = [];
         $columns = $this->parseComment($this->strComment, '@input');
@@ -93,6 +95,45 @@ class NormalActionDoc extends ActionDoc
                 $name = trim($param[1], '$');
                 $input[$name] = (Array)$field;
             }
+        return $input;
+    }*/
+
+    /**
+     * 获取http 请求实体内的输入参数
+     * @return array
+     */
+    public function getInput()
+    {
+
+        if(!$this->hasInputBody()){
+            return [];
+        }
+
+        $model = $this->getModel();
+        $scenarios = $model->scenarios();
+        if (!isset($scenarios[$model->scenario])) {
+            return [];
+        }
+        //return $scenarios[$model->scenario];
+        $attributes = $scenarios[$model->scenario];
+
+        $input = [];
+        if (is_array($attributes))
+            foreach ($attributes as $k => $attribute) {
+
+                $input[$attribute] = $this->getAttributeRules($attribute);
+
+            }
+
+        //if ($this->getModel()->getScenario() === 'default') {
+            $input['fields'] = $this->getAttributeRules('fields');
+
+            $expand = $this->getAttributeRules('expand');
+            if ($expand['range']) {
+                $input['expand'] = $expand;
+            }
+        //}
+
         return $input;
     }
 
@@ -125,7 +166,7 @@ class NormalActionDoc extends ActionDoc
      * 获取返回值
      * @return Fields[]
      */
-    public function getOutput()
+    /*public function getOutput()
     {
         $output = [];
         $columns = $this->parseComment($this->strComment, '@output');
@@ -146,8 +187,47 @@ class NormalActionDoc extends ActionDoc
                 $output[$name] = (Array)$field;
             }
         return $output;
+    }*/
+
+
+    /**
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function getModel()
+    {
+        $scenario = $this->getScenario();
+
+        $modelClass = $this->parseComment($this->strComment, '@modelClass');
+
+        if (empty($modelClass)) {
+            throw new NotFoundModelClassException('没有找到' . $this->getActionName() . '接口所使用的modelClass，请检查该接口注释里面是否标注了@modelClass标签');
+        }
+        $modelClass = trim($modelClass[0]);
+        if ($modelClass) {
+            return new $modelClass([
+                'scenario' => $scenario
+            ]);
+        }
+
     }
 
+
+    /**
+     * 获取当前接口的场景，如果想自定义场景，请在接口的注释里添加上@scenario标签，告诉文档系统，当前接口所使用的场景。
+     * 如果用户没有写这个标签的话，取 yii\base\Model::SCENARIO_DEFAULT 的默认场景值
+     * @return array|string
+     */
+    protected function getScenario()
+    {
+        $scenario = $this->parseComment($this->strComment, '@scenario');
+
+        if (empty($scenario)) {
+            return Model::SCENARIO_DEFAULT;
+        }
+        $scenario = trim($scenario[0]);
+        return $scenario;
+    }
 
 }
 
