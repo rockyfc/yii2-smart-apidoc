@@ -85,10 +85,14 @@ class Comment
                 $field = new Fields();
                 $field->type = (String)$param->getType();
                 $field->comment = $param->getDescription()->render();
-                //$field->required = (bool)preg_match('/required/', $colInfo);
+                $field->required = (bool)preg_match('/required/', $field->comment);
 
-                //preg_match('/range\(([\s\S]*?)\)/', $colInfo, $rs);
-                //$field->range = (Array)@$rs[1];
+                preg_match('/range\(([\s\S]*?)\)/', $field->comment, $rs);
+                $field->range = (Array)@$rs[1];
+
+                preg_match('/default\(([\s\S]*?)\)/', $field->comment, $rs);
+                $field->default = @$rs[1];
+
                 $field->variableName = $param->getVariableName();
 
                 $response[] = $field;

@@ -120,9 +120,7 @@ class NormalActionDoc extends ActionDoc
         $input = [];
         if (is_array($attributes))
             foreach ($attributes as $k => $attribute) {
-
                 $input[$attribute] = $this->getAttributeRules($attribute);
-
             }
 
         //if ($this->getModel()->getScenario() === 'default') {
@@ -200,10 +198,12 @@ class NormalActionDoc extends ActionDoc
 
         $modelClass = $this->parseComment($this->strComment, '@modelClass');
 
-        if (empty($modelClass)) {
-            throw new NotFoundModelClassException('没有找到' . $this->getActionName() . '接口所使用的modelClass，请检查该接口注释里面是否标注了@modelClass标签');
+        if (!empty($modelClass)) {
+            $modelClass = trim($modelClass[0]);
+        } else {
+            $modelClass = $this->controller->modelClass;
         }
-        $modelClass = trim($modelClass[0]);
+
         if ($modelClass) {
             return new $modelClass([
                 'scenario' => $scenario

@@ -78,10 +78,10 @@ if (!YII_ENV_TEST) {
 
 生成文档要求你的接口代码符合以下几个条件：
 
-1. 推荐你尽可能使用Yii2框架在``yii\rest\ActiveController::actions()``提供的系统接口 index、view、create、delete、update接口;
+1. 推荐你尽可能使用Yii2框架在`yii\rest\ActiveController::actions()`提供的系统接口 index、view、create、delete、update接口;
 2. 或者你也可以通过继承IndexAction、ViewAction、CreateAction、UpdateAction、DeleteAction类来实现自定义的Action类，并在actions函数里面引用他。
 3. 该接口文档推荐按照Module的方式来书写接口。
-4. 你也可以在``yii\rest\ActiveController``的子类里面直接写接口。但是需要在注释里面添加一个``@modelClass``标签来告诉文档系统，你自己写的接口引用的是哪个model类。就像以下代码：
+4. 你也可以在`yii\rest\ActiveController`的子类里面直接写接口。但是需要在接口的注释里面添加一个`@modelClass`标签来告诉文档系统，你自己写的接口引用的是哪个model类。就像以下代码：
 
 ```php
 class ExampleController extends yii\rest\ActiveController{
@@ -105,7 +105,33 @@ class ExampleController extends yii\rest\ActiveController{
     
 }
 ```
-
+当然，你也可以不写`@modelClass`标签，如果不写的话，会取当前Controller类中设置的`$modelClass`。
+并且，在接口的注释里面，你还应该添加一个`@scenario`标签，来告诉文档，当前接口用的是什么场景，如果不写的话，取`yii\base\Model::SCENARIO_DEFAULT`设置的默认场景。
+```php
+class ExampleController extends yii\rest\ActiveController{
+        
+       //other code ...
+    
+       /**
+        * 我是一个接口示例。
+        *
+        * @modelClass \api\modules\v1\models\TestModel 
+        * @scenario test
+        * @return mixed
+        */
+       public function actionTest(){
+           $model = new \api\modules\v1\models\TestModel([
+               'scenario' => 'test'//设置场景
+           ]);
+           $model->load(\Yii::$app->request->post(),'');
+           $model->save(true);
+           return $model;
+       }
+    
+    //other code ...
+    
+}
+```
 如果某一个接口类或者接口类中某一个action不想在接口文档中呈现，请在类的注释中添加"未使用"或者"已弃用"字样。比如：
 
 ```php
@@ -176,5 +202,40 @@ class DefaultController extends Controller
     
     //code ...
 }
+
+```
+请看下面的完整示例：
+```php
+
+    /**
+     * 我是一个接口示例
+     *
+     * 这样的接口写法不推荐，但是日常开发过程中，不可避免的会采用这种写法，所以，如果遇到开发者自己开发action接口的话，注释内容便成了生成
+     * 文档的关键。所以，对于一个接口请求，定位资源的url里面如果有参数的话，请在action函数添加上相应的参数，并且参数的注释内容按照如下格
+     * 式定义即可：
+     * range(1,2)表示status字段的可选值；
+     * default(1)表示如果用户不传参数的话，status字段取默认值1。
+     * required关键字表示此字段必填。
+     * 调用此接口的url可能会这样写 "http://xxx.com/v1/activity/edit-data?id=xx&status=1"
+     *
+     * @param int $status 状态值，range(1,2)，default(1)
+     * @param int $userId 用户ID，required
+     *
+     * @modelClass \api\modules\v1\models\ActivitySearch
+     * @scenario edit
+     *
+     * @return null|\api\modules\v1\models\ActivitySearch
+     */
+    public function actionEditData(int $status = 1, int $userId)
+    {
+        $model = \api\modules\v1\models\ActivitySearch::findOne([
+            'status' => $status,
+            'user_id' => $userId
+        ]);
+        $model->setScenario('edit'); //如果不设置，默认使用default场景
+        $model->load(\Yii::$app->request->post(), '');
+        $model->save(true);
+        return $model;
+    }
 
 ```
