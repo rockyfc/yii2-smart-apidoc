@@ -2,6 +2,7 @@
 
 namespace smart\apidoc\models;
 
+use smart\apidoc\exceptions\DocException;
 use smart\apidoc\exceptions\NotFoundModelClassException;
 use yii\base\Model;
 use yii\rest\ActiveController;
@@ -25,21 +26,31 @@ use yii\rest\ActiveController;
  * ```
  * @package smart\apidoc\models
  */
-class NormalActionDoc extends ActionDoc
+class CustomActionDoc extends ActionDoc
 {
     public $strComment;
 
     /**
-     * NormalActionDoc constructor.
+     * CustomActionDoc constructor.
      * @param ActiveController $controller
      * @param $actionId
-     * @param $strComment
+     * @param $moduleId
      */
-    public function __construct(ActiveController $controller, $actionId, $strComment)
+    public function __construct(ActiveController $controller, $actionId,$moduleId)
     {
-        parent::__construct($controller, $actionId);
-        $this->strComment = $strComment;
+        parent::__construct($controller, $actionId,$moduleId);
+        $this->strComment = $this->getCustomActionComment();
     }
+
+
+    private function getCustomActionComment()
+    {
+        $ref = new \ReflectionClass($this->controller);
+        $methodStr = Tools::convertToMethodName($this->actionId);
+        return $ref->getMethod($methodStr)->getDocComment();
+
+    }
+
 
     /**
      * 获取action标题
@@ -71,32 +82,59 @@ class NormalActionDoc extends ActionDoc
         }
     }
 
+
     /**
-     * 获取action参数
-     * @return Fields[]
+     * 判断当前action是否已过期，
+     * @return bool
      */
-/*    public function getInput()
+    public function isDeprecated(){
+        if(empty($this->strComment)){
+            return false;
+        }
+        $Comment = new Comment($this->strComment);
+        return (bool)$Comment->hasTag('deprecated');
+    }
+
+    /**
+     * 判断当前action是否已禁用
+     * @return bool
+     */
+    public function isDisabled(){
+        if(empty($this->strComment)){
+            return false;
+        }
+        $Comment = new Comment($this->strComment);
+        return (bool)$Comment->hasTag('disabled');
+    }
+
+
+
+    /**
+     * 获取action路由
+     * @return string
+     */
+    public function getRoute()
     {
-        $input = [];
-        $columns = $this->parseComment($this->strComment, '@input');
-        if ($columns)
-            foreach ($columns as $colInfo) {
+        if (\Yii::$app->id == $this->moduleId) {
+            $route = ($this->controller->id . '/' . $this->actionId . '');
+        } else {
+            $route = ($this->controller->getUniqueId() . '/' . $this->actionId . '');
+        }
 
-                $param = explode(' ', $colInfo);
+        $params = array_keys($this->getQueryInput());
 
-                $field = new Fields();
-                $field->type = @$param[0];
-                $field->comment = @$param[2];
-                $field->required = (bool)preg_match('/required/', $colInfo);
-
-                preg_match('/range\(([\s\S]*?)\)/', $colInfo, $rs);
-                $field->range = (Array)@$rs[1];
-
-                $name = trim($param[1], '$');
-                $input[$name] = (Array)$field;
+        if ($params) {
+            foreach ($params as $arg) {
+                $tmp[] = $arg.'={xx}';
             }
-        return $input;
-    }*/
+            $route .= '?'.implode('&',$tmp);
+
+        }
+
+        return $route;
+    }
+
+
 
     /**
      * 获取http 请求实体内的输入参数
@@ -160,37 +198,10 @@ class NormalActionDoc extends ActionDoc
     }
 
 
-    /**
-     * 获取返回值
-     * @return Fields[]
-     */
-    /*public function getOutput()
-    {
-        $output = [];
-        $columns = $this->parseComment($this->strComment, '@output');
-        if ($columns)
-            foreach ($columns as $colInfo) {
-
-                $param = explode(' ', $colInfo);
-
-                $field = new Fields();
-                $field->type = @$param[0];
-                $field->comment = @$param[2];
-                $field->required = (bool)preg_match('/required/', $colInfo);
-
-                preg_match('/range\(([\s\S]*?)\)/', $colInfo, $rs);
-                $field->range = (Array)@$rs[1];
-
-                $name = trim($param[1], '$');
-                $output[$name] = (Array)$field;
-            }
-        return $output;
-    }*/
-
 
     /**
      * @return mixed
-     * @throws \Exception
+     * @throws DocException
      */
     protected function getModel()
     {
@@ -204,11 +215,25 @@ class NormalActionDoc extends ActionDoc
             $modelClass = $this->controller->modelClass;
         }
 
-        if ($modelClass) {
-            return new $modelClass([
-                'scenario' => $scenario
-            ]);
+        if (empty($modelClass)) {
+            throw new DocException($this->getControllerName().'::$modelClass'.' 不能为空。');
         }
+
+        if( !class_exists($modelClass) ){
+            throw new DocException($this->getControllerName().'::$modelClass的值'.$modelClass.'没有找到。');
+        }
+
+        if ($modelClass) {
+            $model = new $modelClass();
+        }
+
+        if(!($model instanceof Model)){
+            throw new DocException($this->getControllerName().'::$modelClass的值'.$modelClass.'必须继承自 yii\base\Model类，否则不能生成文档。');
+        }
+
+        $model->setScenario($scenario);
+
+        return $model;
 
     }
 

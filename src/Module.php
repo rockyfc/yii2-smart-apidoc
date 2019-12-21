@@ -27,7 +27,12 @@ class Module extends \yii\base\Module
     /**
      * @var string README.md文件的全路径
      */
-    public $readMeFile;
+    public $readMeFilePath;
+
+    /**
+     * @var bool 是否加载smart-api-doc组件的模板README.md文件
+     */
+    public $loadSmartReadmeFile = true;
 
     /**
      * {@inheritdoc}

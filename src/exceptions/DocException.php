@@ -4,7 +4,7 @@ namespace smart\apidoc\exceptions;
 
 use Throwable;
 
-class NotFoundModelClassException extends DocException
+class DocException extends \Exception
 {
     public function __construct($message = "", $code = 0, Throwable $previous = null)
     {

@@ -2,6 +2,8 @@
 
 namespace smart\apidoc\models;
 
+use smart\apidoc\exceptions\DocException;
+use yii\base\Model;
 use yii\rest\ActiveController;
 
 /**
@@ -10,12 +12,10 @@ use yii\rest\ActiveController;
  */
 class SystemActionDoc extends ActionDoc
 {
-    public $strComment;
 
-    public function __construct(ActiveController $controller, $actionId, $strComment = '')
+    public function __construct(ActiveController $controller, $actionId, $moduleId)
     {
-        parent::__construct($controller, $actionId);
-        $this->strComment = $strComment;
+        parent::__construct($controller, $actionId, $moduleId);
     }
 
     /**
@@ -39,7 +39,7 @@ class SystemActionDoc extends ActionDoc
      */
     public function getTitle()
     {
-        $conf = ['GET' => '获取','POST'=>'', 'PUT' => '更新', 'PATCH' => '更新', 'DELETE' => '删除', 'HEAD' => '获取', 'OPTIONS' => 'OPTIONS'];
+        $conf = ['GET' => '获取', 'POST' => '', 'PUT' => '更新', 'PATCH' => '更新', 'DELETE' => '删除', 'HEAD' => '获取', 'OPTIONS' => 'OPTIONS'];
         //$conf = ['get' => '获取', 'post' => '', 'delete' => ''];
         $act = ['index' => '列表', 'view' => '详情', 'create' => '创建', 'update' => '更新', 'delete' => '删除'];
 
@@ -47,7 +47,7 @@ class SystemActionDoc extends ActionDoc
         $method = $this->getMethod();
         if (is_array($method)) {
             $title .= $conf[$method[0]];
-        }elseif ($method) {
+        } elseif ($method) {
             $title .= $conf[$method];
         }
         if (isset($act[$this->actionId])) {
@@ -64,7 +64,7 @@ class SystemActionDoc extends ActionDoc
      */
     public function getDescription()
     {
-        if ($this->isSystemAction() and method_exists($this->controller,'systemActionDescription')) {
+        if ($this->isSystemAction() and method_exists($this->controller, 'systemActionDescription')) {
             $desc = $this->controller->systemActionDescription();
             if (isset($desc[$this->actionId])) {
                 return $desc[$this->actionId];
@@ -75,6 +75,46 @@ class SystemActionDoc extends ActionDoc
     }
 
 
+    /**
+     * @return bool
+     */
+    public function isDeprecated()
+    {
+        // TODO: Implement isDeprecated() method.
+        return false;
+    }
+
+
+    /**
+     * @return bool
+     */
+    public function isDisabled()
+    {
+        // TODO: Implement isDisabled() method.
+        return false;
+    }
+
+
+    /**
+     * 获取action路由
+     * @return string
+     */
+    public function getRoute()
+    {
+
+        if (\Yii::$app->id == $this->moduleId) {
+            $route = ($this->controller->id . '/' . $this->actionId . '');
+        } else {
+            $route = ($this->controller->getUniqueId() . '/' . $this->actionId . '');
+        }
+
+        if ($this->isUpdate() or $this->isDelete() or $this->isView()) {
+            $route .= '?id={xx}';
+        }
+
+        return $route;
+
+    }
 
     /**
      * 获取http 请求实体内的输入参数
@@ -83,7 +123,7 @@ class SystemActionDoc extends ActionDoc
     public function getInput()
     {
 
-        if(!$this->hasInputBody()){
+        if (!$this->hasInputBody()) {
             return [];
         }
 
@@ -169,7 +209,6 @@ class SystemActionDoc extends ActionDoc
         }
 
 
-
         if ($this->isOther()) {
             //$input['fields'] = $this->getAttributeRules('fields');
             $expand = $this->getAttributeRules('expand');
@@ -184,7 +223,8 @@ class SystemActionDoc extends ActionDoc
     }
 
     /**
-     * @return null|\yii\db\ActiveRecord
+     * @return mixed
+     * @throws DocException
      */
     protected function getModel()
     {
@@ -193,19 +233,34 @@ class SystemActionDoc extends ActionDoc
         if (isset($actions[$this->actionId])
             and isset($actions[$this->actionId]['modelClass'])
             and !empty($actions[$this->actionId]['modelClass'])) {
-            return (new $actions[$this->actionId]['modelClass']([
-                'scenario' => $scenario
-            ]));
+
+            $modelClass = $actions[$this->actionId]['modelClass'];
+
+            if (!class_exists($modelClass)) {
+                throw new DocException('没有找到' . $this->getControllerName() . '::$modelClass中设置的' . $modelClass . '。');
+            }
+
+            if ($modelClass) {
+                $model = new $modelClass();
+            }
+
+            if (!($model instanceof Model)) {
+                throw new DocException($this->getControllerName() . '::$modelClass 中设置的' . $modelClass . '类，必须是 yii\base\Model的子类，否则不能生成文档。');
+            }
+
+            $model->setScenario($scenario);
+
+            return $model;
         }
 
-        $modelClass = $this->actionId . 'ModelClass';
+        /*$modelClass = $this->actionId . 'ModelClass';
         if (!isset($actions[$this->actionId])
             and isset($this->controller->$modelClass)
             and !empty($this->controller->$modelClass)) {
             return (new $this->controller->$modelClass([
                 'scenario' => $scenario
             ]));
-        }
+        }*/
 
         /*if (!isset($actions[$this->actionId])
             and isset($this->controller->modelClass)
@@ -250,9 +305,6 @@ class SystemActionDoc extends ActionDoc
         }
 
     }
-
-
-
 
 
 }

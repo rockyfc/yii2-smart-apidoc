@@ -26,20 +26,21 @@ class DefaultController extends Controller
         /** @var $module \smart\apidoc\Module */
         $module = $this->module;
 
-        //$this->module->id
-        $ApiDoc = new ApiDoc();
-        $ApiDoc->skipModulesId = $module->skipModulesId;
+        $doc = new \smart\apidoc\models\Doc;
 
+        $doc->skipModulesId = $module->skipModulesId;
 
-        //获取接口列表
-        $apiList = $ApiDoc->getAllApiDoc();
-
-
-        //获取README.md
+        //获取用户定义的README.md
         $readmeFileContent = '';
-        $readmeFile = \Yii::getAlias($module->readMeFile);
+        $readmeFile = \Yii::getAlias($module->readMeFilePath);
         if ($readmeFile and file_exists($readmeFile)) {
             $readmeFileContent = file_get_contents($readmeFile);
+        }
+
+        //文档插件内置的README.md文件
+        $smartReadmeFile = '';
+        if($module->loadSmartReadmeFile){
+            $smartReadmeFile = file_get_contents(dirname(__FILE__).'/../Smart_README.md');
         }
 
         //获取实体对象列表
@@ -48,12 +49,15 @@ class DefaultController extends Controller
             $params = explode('\\', $module->entitiesNamespace);
             array_shift($params);
             $entitiesPath = \Yii::getAlias('@app') . '/' . implode('/', $params);
-            $modelsDoc = $ApiDoc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath);
+            $modelsDoc = $doc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath);
         }
 
+
         return $this->render('index.php', [
+            'smartReadmeFile' => $smartReadmeFile,
             'readmeFileContent' => $readmeFileContent,
-            'apiList' => $apiList,
+            'apiList' => $doc->start(),
+            'errors' => $doc->error,
             'modelsDoc' => $modelsDoc,
         ]);
     }

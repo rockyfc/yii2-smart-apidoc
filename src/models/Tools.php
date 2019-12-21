@@ -50,6 +50,17 @@ class Tools
         return implode('-', $arr);
     }
 
+
+    /**
+     * 将一个actionId转换成函数名称
+     * @param $actionId
+     * @return string
+     */
+    public static function convertToMethodName($actionId){
+        $str = ucwords(str_ireplace('-',' ',$actionId));
+
+        return 'action'.str_ireplace(' ','',$str);
+    }
 }
 
 

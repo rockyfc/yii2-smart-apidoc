@@ -2,6 +2,7 @@
 
 namespace smart\apidoc\models;
 
+use smart\apidoc\exceptions\DocException;
 use yii\rest\ActiveController;
 use yii\web\ServerErrorHttpException;
 
@@ -18,6 +19,12 @@ abstract class ActionDoc
     public $controller;
 
     /**
+     * 当前controller的moduleId
+     * @var
+     */
+    public $moduleId;
+
+    /**
      * 当前actionId
      * @var string
      */
@@ -27,11 +34,13 @@ abstract class ActionDoc
      * ActionDoc constructor.
      * @param ActiveController $Controller
      * @param $actionId
+     * @param $moduleId
      */
-    public function __construct(ActiveController $Controller, $actionId)
+    public function __construct(ActiveController $Controller, $actionId,$moduleId)
     {
         $this->controller = $Controller;
         $this->actionId = $actionId;
+        $this->moduleId = $moduleId;
     }
 
     /**
@@ -43,6 +52,8 @@ abstract class ActionDoc
         return [
             'title' => $this->getTitle(),
             'description' => $this->getDescription(),
+            'isDeprecated' => $this->isDeprecated(),
+            'isDisabled' => $this->isDisabled(),
             'method' => $this->getMethod(),
             'route' => $this->getRoute(),
             'queryParams' => $this->getQueryInput(),
@@ -65,14 +76,28 @@ abstract class ActionDoc
     abstract public function getDescription();
 
     /**
+     * 判断当前action是否已过期
+     * @return bool
+     */
+    abstract public function isDeprecated();
+
+    /**
+     * 判断当前action是否已禁用
+     * @return bool
+     */
+    abstract public function isDisabled();
+
+
+
+    /**
      * 获取action的请求方（将请求方式都转换成大写再返回）
      * @return string
-     * @throws \Exception
+     * @throws DocException
      */
     public function getMethod()
     {
 
-        $verbs = $this->controller->verbs();
+        $verbs = $this->getVerbs();
         if (!isset($verbs[$this->actionId]) ) {
             return ['GET'];
         }
@@ -92,9 +117,26 @@ abstract class ActionDoc
         $controllerId = $this->controller->getUniqueId();
         $controllerName = ucwords($this->controller->id) . 'Controller';
         $str = $controllerId . '/' . $this->actionId;
-        throw new \Exception('没有获取到【' . $str . '】的请求方式，请检查' . $controllerName . '::verbs()函数');
+        throw new DocException('没有获取到【' . $str . '】的请求方式，请检查' . $controllerName . '::verbs()函数');
     }
 
+
+    /**
+     * 获取接口的访问方式
+     * @return array
+     * @throws DocException
+     */
+    private function getVerbs()
+    {
+        $ref = new \ReflectionClass($this->controller);
+
+        if( !$ref->getMethod('verbs')->isPublic() ){
+            throw new DocException('请将'.$this->getControllerName().'::verbs()方法或者父类中的verbs()方法访问权限定义为public。');
+        }
+
+        return $this->controller->verbs();
+
+    }
 
     /**
      * 检查当前请求是否是POST、PUT或者PATCH提交
@@ -108,27 +150,6 @@ abstract class ActionDoc
         OR in_array('PATCH',$method) ){
             return true;
         }
-    }
-
-    /**
-     * 获取action路由
-     * @return string
-     */
-    public function getRoute()
-    {
-        $actions = $this->controller->actions();
-        if (isset($actions[$this->actionId]) and isset($actions[$this->actionId]['class'])) {
-            $class = $actions[$this->actionId]['class'];
-
-            if (preg_match('/UpdateAction|DeleteAction|ViewAction/', $class)) {
-                return ($this->controller->getUniqueId() . '/' . $this->actionId . '?id={xx}');
-            }
-        }
-
-//        if($this->actionId=='update' or $this->actionId=='view'){
-//            return ($this->controller->getUniqueId() . '/' . $this->actionId.'?id={xx}');
-//        }
-        return ($this->controller->getUniqueId() . '/' . $this->actionId . '');
     }
 
     /**

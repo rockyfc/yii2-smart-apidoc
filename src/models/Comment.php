@@ -65,6 +65,21 @@ class Comment
     }
 
     /**
+     * 判断指定标签是否存在
+     * @param $tag
+     * @return bool
+     */
+    public function hasTag($tag)
+    {
+        if ($this->docblock and $this->docblock->hasTag($tag)) {
+            return true;
+        }
+        return false;
+    }
+
+
+
+    /**
      * 获取@param标记的参数
      * @return Fields[]|null
      */
