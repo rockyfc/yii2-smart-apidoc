@@ -3,6 +3,7 @@
 namespace smart\apidoc\models;
 
 use smart\apidoc\exceptions\DocException;
+use yii\rest\ActiveController;
 
 
 /**
@@ -21,6 +22,11 @@ class Doc
      * @var array 所有的moduleId
      */
     public $moduleIds;
+
+    /**
+     * @var array
+     */
+    public $extraControllers = [];
 
     /**
      * @var array 记录文档中的异常或错误
@@ -104,29 +110,87 @@ class Doc
      */
     public function getControllersByModuleId($moduleId)
     {
+        $Module = $this->getModule($moduleId);
+        if (!$Module) {
+            return [];
+        }
 
         $controllersList = [];
-        if (\Yii::$app->id == $moduleId) {
-            $Module = \Yii::$app;
-        } else {
-            $Module = \Yii::$app->getModule($moduleId, true);
-        }
-
-        if (!$Module) {
-            return $controllersList;
-        }
-
         $namespace = $Module->controllerNamespace;
         $path = $Module->getControllerPath();
         $controllers = glob($path . '/*Controller.php');
 
         if ($controllers)
             foreach ($controllers as $ctrl) {
-                $ctrlName = basename(trim($ctrl, '.php'));
-                $controllersList[] = $namespace . '\\' . $ctrlName;
-            }
-        return $controllersList;
 
+
+                $ctrlName = basename(trim($ctrl, '.php'));
+
+                $class = $namespace . '\\' . $ctrlName;
+
+                if (!($controllerInstance = $this->createControllerInstance($class, $moduleId))) {
+                    continue;
+                }
+
+                $controllersList[] = $class;
+            }
+
+        return array_merge($controllersList, $this->getControllersByModuleControllerMap($moduleId));
+        //return $controllersList;
+
+    }
+
+    public function getModule($moduleId)
+    {
+        if (\Yii::$app->id == $moduleId) {
+            $Module = \Yii::$app;
+        } else {
+            $Module = \Yii::$app->getModule($moduleId, true);
+        }
+        return $Module;
+    }
+
+    /**
+     * 获取module中指定controllerMap属性中的设置
+     * @param $moduleId
+     * @return array
+     */
+    public function getControllersByModuleControllerMap($moduleId)
+    {
+        $Module = $this->getModule($moduleId);
+        if (!$Module) {
+            return [];
+        }
+
+        $controllersList = [];
+
+        if ($Module->controllerMap) foreach ($Module->controllerMap as $controllerId => $class) {
+            if (empty($class)) {
+                continue;
+            }
+
+            if(is_array($class) and (!isset($class['class']) or empty($class['class']))){
+                continue;
+            }
+
+            if(is_array($class)){
+                $controllerClassName = $class['class'];
+            }
+
+            if(is_string($class)){
+                $controllerClassName = $class;
+            }
+
+            $controllerInstance = $this->createControllerInstance($controllerClassName, $moduleId, $controllerId);
+            if (!$controllerInstance or !($controllerInstance instanceof ActiveController)) {
+                continue;
+            }
+
+            $controllersList[] = $controllerInstance::className();
+
+        }
+
+        return $controllersList;
     }
 
     /**
@@ -141,23 +205,35 @@ class Doc
         return new ControllerDoc($controller, $moduleId);
     }
 
+    private $_controllerInstances = [];
 
     /**
      * 创建一个controller实例
      * @param $controllerClass
      * @param $moduleId
-     * @return object
+     * @param null $controllerId
+     * @return ActiveController
      */
-    private function createControllerInstance($controllerClass, $moduleId)
+    private function createControllerInstance($controllerClass, $moduleId, $controllerId = null)
     {
         $classArr = explode('\\', $controllerClass);
         $ctrlName = end($classArr);
-        $controllerId = Tools::convertToControllerId($ctrlName);
 
-        return \Yii::createObject(
+        if (!$controllerId) {
+            $controllerId = Tools::convertToControllerId($ctrlName);
+        }
+
+        $id = $controllerClass;
+        if(isset($this->_controllerInstances[$id])){
+            return $this->_controllerInstances[$id];
+        }
+
+        $this->_controllerInstances[$id] = \Yii::createObject(
             $controllerClass,
             [$controllerId, \Yii::$app->getModule($moduleId, true)]
         );
+
+        return $this->_controllerInstances[$id];
     }
 
 
