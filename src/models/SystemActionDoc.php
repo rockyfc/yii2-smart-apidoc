@@ -39,7 +39,7 @@ class SystemActionDoc extends ActionDoc
      */
     public function getTitle()
     {
-        $conf = ['GET' => '获取', 'POST' => '', 'PUT' => '更新', 'PATCH' => '更新', 'DELETE' => '删除', 'HEAD' => '获取', 'OPTIONS' => 'OPTIONS'];
+        $conf = ['GET' => '获取', 'POST' => '', 'PUT' => '', 'PATCH' => '', 'DELETE' => '', 'HEAD' => '获取', 'OPTIONS' => 'OPTIONS'];
         //$conf = ['get' => '获取', 'post' => '', 'delete' => ''];
         $act = ['index' => '列表', 'view' => '详情', 'create' => '创建', 'update' => '更新', 'delete' => '删除'];
 
@@ -122,13 +122,14 @@ class SystemActionDoc extends ActionDoc
      */
     public function getInput()
     {
-
+        
         if (!$this->hasInputBody()) {
             return [];
         }
 
         $model = $this->getModel();
         $scenarios = $model->scenarios();
+
         if (!isset($scenarios[$model->scenario])) {
             return [];
         }
@@ -138,28 +139,10 @@ class SystemActionDoc extends ActionDoc
         $input = [];
         if (is_array($attributes))
             foreach ($attributes as $k => $attribute) {
-
-                if (!is_int($k)) {
-                    $index = $k;
-                } elseif ($this->getModel()->getScenario() === 'default') {
-                    $index = 'filter[' . $attribute . ']';
-                } else {
-                    $index = $attribute;
-                }
-
+                $index = $attribute;
                 $input[$index] = $this->getAttributeRules($attribute);
-
             }
 
-        if ($this->getModel()->getScenario() === 'default') {
-            $input['fields'] = $this->getAttributeRules('fields');
-
-            $expand = $this->getAttributeRules('expand');
-            if ($expand['range']) {
-                $input['expand'] = $expand;
-
-            }
-        }
 
         return $input;
     }

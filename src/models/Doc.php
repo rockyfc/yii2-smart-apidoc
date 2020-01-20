@@ -128,7 +128,9 @@ class Doc
 
                 $class = $namespace . '\\' . $ctrlName;
 
-                if (!($controllerInstance = $this->createControllerInstance($class, $moduleId))) {
+                $controllerInstance = $this->createControllerInstance($class, $moduleId);
+
+                if (!$controllerInstance or !($controllerInstance instanceof ActiveController)) {
                     continue;
                 }
 

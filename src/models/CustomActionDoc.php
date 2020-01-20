@@ -161,14 +161,14 @@ class CustomActionDoc extends ActionDoc
                 $input[$attribute] = $this->getAttributeRules($attribute);
             }
 
-        //if ($this->getModel()->getScenario() === 'default') {
+        if ($this->getModel()->getScenario() === 'default') {
             $input['fields'] = $this->getAttributeRules('fields');
 
             $expand = $this->getAttributeRules('expand');
             if ($expand['range']) {
                 $input['expand'] = $expand;
             }
-        //}
+        }
 
         return $input;
     }

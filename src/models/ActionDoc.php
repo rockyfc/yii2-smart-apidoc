@@ -36,7 +36,7 @@ abstract class ActionDoc
      * @param $actionId
      * @param $moduleId
      */
-    public function __construct(ActiveController $Controller, $actionId,$moduleId)
+    public function __construct(ActiveController $Controller, $actionId, $moduleId)
     {
         $this->controller = $Controller;
         $this->actionId = $actionId;
@@ -88,7 +88,6 @@ abstract class ActionDoc
     abstract public function isDisabled();
 
 
-
     /**
      * 获取action的请求方（将请求方式都转换成大写再返回）
      * @return string
@@ -98,16 +97,16 @@ abstract class ActionDoc
     {
 
         $verbs = $this->getVerbs();
-        if (!isset($verbs[$this->actionId]) ) {
+        if (!isset($verbs[$this->actionId])) {
             return ['GET'];
         }
 
-        if(is_string($verbs[$this->actionId])){
+        if (is_string($verbs[$this->actionId])) {
             return strtoupper($verbs[$this->actionId]);
         }
 
-        if(is_array($verbs[$this->actionId])){
-            foreach($verbs[$this->actionId] as &$val){
+        if (is_array($verbs[$this->actionId])) {
+            foreach ($verbs[$this->actionId] as &$val) {
                 $val = strtoupper($val);
             }
             return $verbs[$this->actionId];
@@ -130,8 +129,8 @@ abstract class ActionDoc
     {
         $ref = new \ReflectionClass($this->controller);
 
-        if( !$ref->getMethod('verbs')->isPublic() ){
-            throw new DocException('请将'.$this->getControllerName().'::verbs()方法或者父类中的verbs()方法访问权限定义为public。');
+        if (!$ref->getMethod('verbs')->isPublic()) {
+            throw new DocException('请将' . $this->getControllerName() . '::verbs()方法或者父类中的verbs()方法访问权限定义为public。');
         }
 
         return $this->controller->verbs();
@@ -145,9 +144,9 @@ abstract class ActionDoc
     public function hasInputBody()
     {
         $method = $this->getMethod();
-        if(in_array('POST',$method)
-        OR in_array('PUT',$method)
-        OR in_array('PATCH',$method) ){
+        if (in_array('POST', $method)
+            OR in_array('PUT', $method)
+            OR in_array('PATCH', $method)) {
             return true;
         }
     }
@@ -234,8 +233,6 @@ abstract class ActionDoc
         }*/
 
     }
-
-
 
 
     /**
@@ -329,7 +326,7 @@ abstract class ActionDoc
         $model = $this->getModel();
         $attributes = $model->fields();
 
-        if (!$attributes) {
+        if (!$attributes or $this->getMethod() == ['DELETE']) {
             return [];
         }
 
@@ -360,7 +357,6 @@ abstract class ActionDoc
 
         return $output;
     }
-
 
 
     /**
@@ -509,7 +505,6 @@ abstract class ActionDoc
     }
 
 
-
     /**
      * 获取当前接口的场景
      * @return mixed
@@ -529,14 +524,15 @@ abstract class ActionDoc
      */
     public function getControllerName()
     {
-        return  ucwords($this->controller->id) . 'Controller';
+        return ucwords($this->controller->id) . 'Controller';
     }
 
     /**
      * 获取action名称
      * @return string
      */
-    public function getActionName(){
+    public function getActionName()
+    {
         $controllerId = $this->controller->getUniqueId();
         return $controllerId . '/' . $this->actionId;
     }

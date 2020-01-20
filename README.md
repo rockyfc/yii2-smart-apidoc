@@ -32,16 +32,20 @@ if (!YII_ENV_TEST) {
 
     $config['modules']['doc'] = [
         'class' => 'smart\apidoc\Module',
-
-        //当前api项目中得README.md文件路径
-        'readMeFile'=>'@webroot/../README.md',
-
+        
+        //是否载入yii2-smart-apidoc文档提供的README.md文件，默认是true
+        'loadSmartReadmeFile' => true,
+        
+        //当前api项目中的自定义的README.md文件绝对路径
+        'readMeFilePath' => '@webroot/../README.md',
+        
+        
         //要屏蔽掉的Module模块
-        'skipModulesId' => ['debug', 'gii','doc'],
-
+        'skipModulesId' => ['debug', 'gii', 'doc'],
+        
         //数据对象的命名空间。
         //对应着文档中的对象列表，这个配置关乎着是否在接口文档中体现对象列表
-        'entitiesNamespace' => 'api\common\models'
+        'entitiesNamespace' => ['api\common\models']
     ];
     
     //other code ...
