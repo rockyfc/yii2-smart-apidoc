@@ -36,9 +36,9 @@ class CustomActionDoc extends ActionDoc
      * @param $actionId
      * @param $moduleId
      */
-    public function __construct(ActiveController $controller, $actionId,$moduleId)
+    public function __construct(ActiveController $controller, $actionId, $moduleId)
     {
-        parent::__construct($controller, $actionId,$moduleId);
+        parent::__construct($controller, $actionId, $moduleId);
         $this->strComment = $this->getCustomActionComment();
     }
 
@@ -87,8 +87,9 @@ class CustomActionDoc extends ActionDoc
      * 判断当前action是否已过期，
      * @return bool
      */
-    public function isDeprecated(){
-        if(empty($this->strComment)){
+    public function isDeprecated()
+    {
+        if (empty($this->strComment)) {
             return false;
         }
         $Comment = new Comment($this->strComment);
@@ -99,14 +100,14 @@ class CustomActionDoc extends ActionDoc
      * 判断当前action是否已禁用
      * @return bool
      */
-    public function isDisabled(){
-        if(empty($this->strComment)){
+    public function isDisabled()
+    {
+        if (empty($this->strComment)) {
             return false;
         }
         $Comment = new Comment($this->strComment);
         return (bool)$Comment->hasTag('disabled');
     }
-
 
 
     /**
@@ -125,9 +126,9 @@ class CustomActionDoc extends ActionDoc
 
         if ($params) {
             foreach ($params as $arg) {
-                $tmp[] = $arg.'={xx}';
+                $tmp[] = $arg . '={xx}';
             }
-            $route .= '?'.implode('&',$tmp);
+            $route .= '?' . implode('&', $tmp);
 
         }
 
@@ -135,17 +136,16 @@ class CustomActionDoc extends ActionDoc
     }
 
 
-
     /**
      * 获取http 请求实体内的输入参数
-     * @return array
+     * @return array|mixed
+     * @throws DocException
      */
     public function getInput()
     {
-
-        if(!$this->hasInputBody()){
+        /*if (!$this->hasInputBody()) {
             return [];
-        }
+        }*/
 
         $model = $this->getModel();
         $scenarios = $model->scenarios();
@@ -156,19 +156,73 @@ class CustomActionDoc extends ActionDoc
         $attributes = $scenarios[$model->scenario];
 
         $input = [];
-        if (is_array($attributes))
-            foreach ($attributes as $k => $attribute) {
-                $input[$attribute] = $this->getAttributeRules($attribute);
-            }
 
-        if ($this->getModel()->getScenario() === 'default') {
-            $input['fields'] = $this->getAttributeRules('fields');
-
-            $expand = $this->getAttributeRules('expand');
-            if ($expand['range']) {
-                $input['expand'] = $expand;
-            }
+        if (!$attributes or !is_array($attributes)) {
+            return [];
         }
+
+        if (in_array('GET', $this->getMethod())) {
+
+            $options = $this->parseComment($this->strComment, '@options');
+            $options = @$options[0];
+            if ($options) {
+                $options = explode(',', $options);
+            }
+
+            //如果@options标签中有fields
+            if ($options and in_array('fields', $options)) {
+                $input['fields'] = $this->getAttributeRules('fields');
+            }
+
+            foreach ($attributes as $k => $attribute) {
+
+                //如果@options标签中有filter
+                if ( $options and in_array('filter', $options)) {
+                    $index = 'filter[' . $attribute . ']';
+                } else {
+                    $index = $attribute;
+                }
+
+                $input[$index] = $this->getAttributeRules($attribute);
+
+                if (in_array('GET', $this->getMethod())) {
+                    $input[$index]['required'] = false;
+                }
+            }
+
+            //如果@options标签中有expand
+            if ($options and in_array('expand', $options)) {
+                $expand = $this->getAttributeRules('expand');
+                if ($expand['range']) {
+                    $input['expand'] = $expand;
+                }
+            }
+
+            return $input;
+
+        }
+
+
+        foreach ($attributes as $k => $attribute) {
+            $input[$attribute] = $this->getAttributeRules($attribute);
+        }
+
+        return $input;
+
+
+        if (in_array('GET', $this->getMethod()) and $options and isset($options[0])) {
+            $options = explode(',', $options[0]);
+
+            /**/
+
+
+        }
+
+
+        /*if ($this->getModel()->getScenario() === 'default') {
+
+
+        }*/
 
         return $input;
     }
@@ -185,18 +239,18 @@ class CustomActionDoc extends ActionDoc
         $columns = $Comment->getParamTag();
 
         //print_r($columns);
-        if (!$columns) {
-            return [];
+        if ($columns) {
+            /** @var Fields $field */
+            foreach ($columns as $field) {
+                $input[$field->variableName] = (Array)$field;
+            }
+
         }
 
-        /** @var Fields $field */
-        foreach ($columns as $field) {
-            $input[$field->variableName] = (Array)$field;
-        }
+
         //print_r($input);
         return $input;
     }
-
 
 
     /**
@@ -211,24 +265,27 @@ class CustomActionDoc extends ActionDoc
 
         if (!empty($modelClass)) {
             $modelClass = trim($modelClass[0]);
+            if (empty($modelClass)) {
+                throw new DocException($this->getControllerName() . '::' . $this->getActionName() . '的$modelClass' . ' 不能为空。' . $modelClass);
+            }
         } else {
             $modelClass = $this->controller->modelClass;
         }
 
         if (empty($modelClass)) {
-            throw new DocException($this->getControllerName().'::$modelClass'.' 不能为空。');
+            throw new DocException($this->getControllerName() . '::$modelClass' . ' 不能为空。' . $modelClass);
         }
 
-        if( !class_exists($modelClass) ){
-            throw new DocException($this->getControllerName().'::$modelClass的值'.$modelClass.'没有找到。');
+        if (!class_exists($modelClass)) {
+            throw new DocException($this->getControllerName() . '::$modelClass的值' . $modelClass . '没有找到。');
         }
 
         if ($modelClass) {
             $model = new $modelClass();
         }
 
-        if(!($model instanceof Model)){
-            throw new DocException($this->getControllerName().'::$modelClass的值'.$modelClass.'必须继承自 yii\base\Model类，否则不能生成文档。');
+        if (!($model instanceof Model)) {
+            throw new DocException($this->getControllerName() . '::$modelClass的值' . $modelClass . '必须继承自 yii\base\Model类，否则不能生成文档。');
         }
 
         $model->setScenario($scenario);
@@ -254,6 +311,22 @@ class CustomActionDoc extends ActionDoc
         return $scenario;
     }
 
+
+    /**
+     * 获取action名称
+     * @return string
+     */
+    public function getActionName()
+    {
+        //return $this->actionId;
+        //$controllerId = $this->controller->getUniqueId();
+        //return $controllerId . '/' . $this->actionId;
+
+
+        $actionId = ucwords(str_ireplace('-', ' ', $this->actionId));
+        $actionId = str_ireplace(' ', '', $actionId);
+        return 'action' . $actionId . '()';
+    }
 }
 
 

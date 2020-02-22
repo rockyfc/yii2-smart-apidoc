@@ -52,6 +52,11 @@ class Doc
                 try {
 
                     $controllerDoc = $this->getControllerDoc($controllerClass, $moduleId);
+
+                    if($controllerDoc->isDisabled()){
+                        continue;
+                    }
+
                     if ($moduleId == \Yii::$app->id) {
                         $str = '';
                     } else {

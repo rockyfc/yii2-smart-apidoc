@@ -52,6 +52,7 @@ class DefaultController extends Controller
             $modelsDoc = $doc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath);
         }
 
+        //print_r($doc->start());exit;
 
         return $this->render('index.php', [
             'smartReadmeFile' => $smartReadmeFile,

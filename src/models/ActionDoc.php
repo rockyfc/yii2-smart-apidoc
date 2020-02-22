@@ -319,7 +319,8 @@ abstract class ActionDoc
 
     /**
      * 获取当前接口的返回值
-     * @return mixed
+     * @return array
+     * @throws DocException
      */
     public function getOutput()
     {
@@ -524,7 +525,11 @@ abstract class ActionDoc
      */
     public function getControllerName()
     {
-        return ucwords($this->controller->id) . 'Controller';
+
+        $ctrl = $this->controller;
+        return $ctrl::className();
+
+
     }
 
     /**
@@ -532,6 +537,25 @@ abstract class ActionDoc
      * @return string
      */
     public function getActionName()
+    {
+        $controllerId = $this->controller->getUniqueId();
+        return $controllerId . '/' . $this->actionId;
+    }
+
+    /**
+     * 获取控制器的路由形式
+     * @return string
+     */
+    public function getControllerRoute()
+    {
+        return $this->controller->getUniqueId();
+    }
+
+    /**
+     * 获取action的路由形式
+     * @return string
+     */
+    public function getActionRoute()
     {
         $controllerId = $this->controller->getUniqueId();
         return $controllerId . '/' . $this->actionId;

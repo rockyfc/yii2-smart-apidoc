@@ -79,7 +79,7 @@
                                 无<br/><br/>
                             <?php endif; ?>
 
-                            <?php if (in_array('POST', $action['method']) OR in_array('PUT', $action['method']) OR in_array('PATCH', $action['method'])): ?>
+                            <?php if (in_array('GET', $action['method']) OR in_array('POST', $action['method']) OR in_array('PUT', $action['method']) OR in_array('PATCH', $action['method'])): ?>
 
                                 <strong><?= implode('，', $action['method']) ?>输入参数：</strong>
                                 <?php if (isset($action['input'])): ?>
