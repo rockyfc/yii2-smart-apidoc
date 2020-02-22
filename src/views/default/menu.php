@@ -1,6 +1,5 @@
 <div class="col-lg-3">
 
-
     <ul id="myTab" class="nav nav-tabs" style="border:none">
         </li>
         <li class="active" onClick="menutab('#fc-api')">

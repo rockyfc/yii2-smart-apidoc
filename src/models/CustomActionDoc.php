@@ -116,11 +116,13 @@ class CustomActionDoc extends ActionDoc
      */
     public function getRoute()
     {
-        if (\Yii::$app->id == $this->moduleId) {
+        /*if (\Yii::$app->id == $this->moduleId) {
             $route = ($this->controller->id . '/' . $this->actionId . '');
         } else {
-            $route = ($this->controller->getUniqueId() . '/' . $this->actionId . '');
-        }
+            $route = ($this->controller->getRoute() . '/' . $this->actionId . '');
+        }*/
+
+        $route = $this->controller->getRoute();
 
         $params = array_keys($this->getQueryInput());
 

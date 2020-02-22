@@ -21,7 +21,7 @@ class Module extends \yii\base\Module
      * 对象列表的命名空间
      * @var string
      */
-    public $entitiesNamespace = 'api\common\models';
+    public $entitiesNamespace = '';
 
 
     /**

@@ -3,6 +3,7 @@
 namespace smart\apidoc\models;
 
 use smart\apidoc\exceptions\DocException;
+use yii\base\Action;
 use yii\rest\ActiveController;
 use yii\web\ServerErrorHttpException;
 
@@ -35,17 +36,25 @@ abstract class ActionDoc
      * @param ActiveController $Controller
      * @param $actionId
      * @param $moduleId
+     * @throws \yii\base\InvalidConfigException
      */
     public function __construct(ActiveController $Controller, $actionId, $moduleId)
     {
         $this->controller = $Controller;
         $this->actionId = $actionId;
         $this->moduleId = $moduleId;
+
+        $this->controller->action = \Yii::createObject(
+            Action::class,
+            [$actionId, $Controller]
+        );
+
     }
 
     /**
      * 获取当前action的文档内容
      * @return array
+     * @throws DocException
      */
     public function doc()
     {
@@ -316,6 +325,12 @@ abstract class ActionDoc
      * @return mixed
      */
     abstract public function getQueryInput();
+
+    /**
+     * 获取路由
+     * @return mixed
+     */
+    abstract public function getRoute();
 
     /**
      * 获取当前接口的返回值

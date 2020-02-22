@@ -4,7 +4,6 @@
 
         <?= $this->render('menu.php', ['apiList' => $apiList, 'modelsDoc' => $modelsDoc]) ?>
 
-
         <div class="col-lg-9">
             <?= $this->render('message.php', ['errors' => $errors]) ?>
 
