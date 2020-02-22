@@ -46,10 +46,14 @@ class DefaultController extends Controller
         //获取实体对象列表
         $modelsDoc = [];
         if (!empty($module->entitiesNamespace)) {
-            $params = explode('\\', $module->entitiesNamespace);
-            array_shift($params);
-            $entitiesPath = \Yii::getAlias('@app') . '/' . implode('/', $params);
-            $modelsDoc = $doc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath);
+            $modelsDoc = [];
+            foreach($module->entitiesNamespace as $item){
+                $params = explode('\\', $item);
+                array_shift($params);
+                $entitiesPath = \Yii::getAlias('@app') . '/' . implode('/', $params);
+                $modelsDoc = array_merge($modelsDoc,$doc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath));
+            }
+
         }
 
         //print_r($doc->start());exit;
