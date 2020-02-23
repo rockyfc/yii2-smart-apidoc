@@ -19,9 +19,9 @@ class Module extends \yii\base\Module
 
     /**
      * 对象列表的命名空间
-     * @var string
+     * @var callable
      */
-    public $entitiesNamespace = '';
+    public $entities;
 
 
     /**

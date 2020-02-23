@@ -43,20 +43,19 @@ class DefaultController extends Controller
             $smartReadmeFile = file_get_contents(dirname(__FILE__).'/../Smart_README.md');
         }
 
+
         //获取实体对象列表
         $modelsDoc = [];
-        if (!empty($module->entitiesNamespace)) {
-            $modelsDoc = [];
-            foreach($module->entitiesNamespace as $item){
-                $params = explode('\\', $item);
-                array_shift($params);
-                $entitiesPath = \Yii::getAlias('@app') . '/' . implode('/', $params);
-                $modelsDoc = array_merge($modelsDoc,$doc->getAllModelsDoc($module->entitiesNamespace, $entitiesPath));
-            }
+        if ($module->entities !== null) {
+            $models =  call_user_func($module->entities, $module);
 
+            foreach($models as $cls){
+                $modelsDoc[] = $a = $doc->getAllModelsDoc($cls);
+
+            }
         }
 
-        //print_r($doc->start());exit;
+        //print_r($modelsDoc);exit;
 
         return $this->render('index.php', [
             'smartReadmeFile' => $smartReadmeFile,

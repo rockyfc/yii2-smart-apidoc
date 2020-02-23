@@ -248,33 +248,15 @@ class Doc
      * @return array
      * @throws DocException
      */
-    public function getAllModelsDoc($namespace, $modelPath = null)
+    public function getAllModelsDoc($className)
     {
-        if (empty($modelPath)) {
-            $modelPath = \Yii::getAlias('@app') . '/common/models';
-        }
-
-        if (!is_dir($modelPath)) {
-            throw new DocException($modelPath . '不存在');
-        }
-
-        $modelsDoc = [];
-
-        $files = glob($modelPath . '/*.php');
-        if ($files) {
-            foreach ($files as $classFile) {
-                $basename = basename($classFile);
-                $basename = substr($basename, 0, -4);
-                $model = $namespace . '\\' . $basename;
-                $model = new $model;
-                $modelsDoc[] = [
-                    'title' => '',
-                    'name' => lcfirst($basename),
-                    'comment' => ModelDoc::comment($model)
-                ];
-            }
-        }
-        return $modelsDoc;
+        $arr = explode('\\',$className);
+        $name = end($arr);
+        return [
+            'title' => '',
+            'name' => lcfirst($name),
+            'comment' => ModelDoc::comment(new $className)
+        ];
     }
 
 
