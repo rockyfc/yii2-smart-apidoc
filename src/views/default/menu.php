@@ -27,7 +27,8 @@
                                 echo "<s>";
                             } ?>
 
-                            <?= $controllerId ?><?= !empty($controller['title']) ? "【" . $controller['title'] . "】" : null ?>
+                            <h5><?= !empty($controller['title']) ? "【" . $controller['title'] . "】" : null ?></h5>
+
                             <?php if ($controller['isDeprecated']) {
                                 echo "</s>";
                             } ?>

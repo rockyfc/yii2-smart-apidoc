@@ -53,7 +53,7 @@ class Doc
                     continue;
                 }
 
-                $data[$controllers->id] = $controllerDoc->doc();
+                $data[] = $controllerDoc->doc();
 
             } catch (DocException $e) {
                 $this->error[] = $e->getMessage();
@@ -61,27 +61,6 @@ class Doc
         }
         return $data;
     }
-
-
-    /**
-     * 获取当前系统所有的moduleId
-     * @return array
-     */
-    /*public function getModuleIds()
-    {
-        if ($this->moduleIds !== null) {
-            return $this->moduleIds;
-        }
-
-        $this->moduleIds = [\Yii::$app->id];
-        foreach (\Yii::$app->getModules() as $moduleId => $model) {
-            if (in_array($moduleId, $this->skipModulesId)) {
-                continue;
-            }
-            $this->moduleIds[] = $moduleId;
-        }
-        return $this->moduleIds;
-    }*/
 
 
     /**
