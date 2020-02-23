@@ -2,6 +2,7 @@
 
 namespace smart\apidoc\models;
 
+use yii\base\Module;
 use yii\rest\ActiveController;
 
 class ControllerDoc
@@ -16,6 +17,8 @@ class ControllerDoc
      */
     public $moduleId;
 
+
+
     /**
      * @var string
      */
@@ -24,11 +27,13 @@ class ControllerDoc
     /**
      * ControllerDoc constructor.
      * @param ActiveController $controller
+     * @param Module $module
+     * @throws \ReflectionException
      */
-    public function __construct(ActiveController $controller,$moduleId)
+    public function __construct(ActiveController $controller,Module $module)
     {
         $this->controller = $controller;
-        $this->moduleId = $moduleId;
+        $this->moduleId = $module->id;
 
         $ref = new \ReflectionClass($this->controller);
         $this->comment = (String)$ref->getDocComment();
@@ -127,13 +132,14 @@ class ControllerDoc
     /**
      * 获取系统接口文档，即：在Controller::actions()中定义的接口的接口文档
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function getSysActionsDoc()
     {
         $actionDocs = [];
         $sysActions = $this->getSysActions();
         foreach ($sysActions as $actionId) {
-            $ActionDoc = new SystemActionDoc($this->controller, $actionId,$this->moduleId);
+            $ActionDoc = new SystemActionDoc($this->controller, $actionId);
             $actionDocs[$actionId] = $ActionDoc->doc();
         }
         return $actionDocs;
@@ -142,13 +148,14 @@ class ControllerDoc
     /**
      * 获取用户自定义的接口的接口文档
      * @return array
+     * @throws \smart\apidoc\exceptions\DocException
      */
     public function getCustomActionsDoc()
     {
         $actionDocs = [];
         $customActions = $this->getCustomActions();
         foreach ($customActions as $actionId) {
-            $ActionDoc = new CustomActionDoc($this->controller, $actionId,$this->moduleId);
+            $ActionDoc = new CustomActionDoc($this->controller, $actionId);
             $actionDocs[$actionId] = $ActionDoc->doc();
         }
         return $actionDocs;
@@ -168,6 +175,7 @@ class ControllerDoc
     /**
      * 获取用户自定义的接口
      * @return array
+     * @throws \ReflectionException
      */
     private function getCustomActions()
     {

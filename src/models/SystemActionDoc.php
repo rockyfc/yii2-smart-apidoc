@@ -13,9 +13,9 @@ use yii\rest\ActiveController;
 class SystemActionDoc extends ActionDoc
 {
 
-    public function __construct(ActiveController $controller, $actionId, $moduleId)
+    public function __construct(ActiveController $controller, $actionId)
     {
-        parent::__construct($controller, $actionId, $moduleId);
+        parent::__construct($controller, $actionId);
     }
 
     /**
@@ -101,13 +101,6 @@ class SystemActionDoc extends ActionDoc
      */
     public function getRoute()
     {
-
-        /*if (\Yii::$app->id == $this->moduleId) {
-            $route = ($this->controller->id . '/' . $this->actionId . '');
-        } else {
-            $route = ($this->controller->getUniqueId() . '/' . $this->actionId . '');
-        }*/
-
         $route = $this->controller->getRoute();
 
         if ($this->isUpdate() or $this->isDelete() or $this->isView()) {

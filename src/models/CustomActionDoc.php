@@ -34,11 +34,11 @@ class CustomActionDoc extends ActionDoc
      * CustomActionDoc constructor.
      * @param ActiveController $controller
      * @param $actionId
-     * @param $moduleId
+     * @throws \yii\base\InvalidConfigException
      */
-    public function __construct(ActiveController $controller, $actionId, $moduleId)
+    public function __construct(ActiveController $controller, $actionId)
     {
-        parent::__construct($controller, $actionId, $moduleId);
+        parent::__construct($controller, $actionId);
         $this->strComment = $this->getCustomActionComment();
     }
 
@@ -116,11 +116,6 @@ class CustomActionDoc extends ActionDoc
      */
     public function getRoute()
     {
-        /*if (\Yii::$app->id == $this->moduleId) {
-            $route = ($this->controller->id . '/' . $this->actionId . '');
-        } else {
-            $route = ($this->controller->getRoute() . '/' . $this->actionId . '');
-        }*/
 
         $route = $this->controller->getRoute();
 
@@ -179,7 +174,7 @@ class CustomActionDoc extends ActionDoc
             foreach ($attributes as $k => $attribute) {
 
                 //如果@options标签中有filter
-                if ( $options and in_array('filter', $options)) {
+                if ($options and in_array('filter', $options)) {
                     $index = 'filter[' . $attribute . ']';
                 } else {
                     $index = $attribute;

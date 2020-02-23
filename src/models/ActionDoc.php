@@ -38,11 +38,10 @@ abstract class ActionDoc
      * @param $moduleId
      * @throws \yii\base\InvalidConfigException
      */
-    public function __construct(ActiveController $Controller, $actionId, $moduleId)
+    public function __construct(ActiveController $Controller, $actionId)
     {
         $this->controller = $Controller;
         $this->actionId = $actionId;
-        $this->moduleId = $moduleId;
 
         $this->controller->action = \Yii::createObject(
             Action::class,

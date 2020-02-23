@@ -3,6 +3,7 @@
 namespace smart\apidoc\models;
 
 use smart\apidoc\exceptions\DocException;
+use yii\base\Module;
 use yii\rest\ActiveController;
 
 
@@ -36,37 +37,26 @@ class Doc
     /**
      * 获取全部文档信息
      * @return array
+     * @throws \ReflectionException
+     * @throws \yii\base\InvalidConfigException
      */
     public function start()
     {
-        $controllers = $this->getControllers();
-
         $data = [];
-        foreach ($controllers as $moduleId => $items) {
-            $list[] = $moduleId;
-            if (!$items) {
-                continue;
-            }
-            foreach ($items as $controllerClass) {
+        $controllers = $this->getControllers();
+        foreach ($controllers as $controllers) {
 
-                try {
+            try {
+                $controllerDoc = $this->getControllerDoc($controllers, $controllers->module);
 
-                    $controllerDoc = $this->getControllerDoc($controllerClass, $moduleId);
-
-                    if($controllerDoc->isDisabled()){
-                        continue;
-                    }
-
-                    if ($moduleId == \Yii::$app->id) {
-                        $str = '';
-                    } else {
-                        $str = $moduleId . '/';
-                    }
-                    $data[$str . $controllerDoc->controller->id] = $controllerDoc->doc();
-
-                } catch (DocException $e) {
-                    $this->error[] = $e->getMessage();
+                if ($controllerDoc->isDisabled()) {
+                    continue;
                 }
+
+                $data[$controllers->id] = $controllerDoc->doc();
+
+            } catch (DocException $e) {
+                $this->error[] = $e->getMessage();
             }
         }
         return $data;
@@ -77,7 +67,7 @@ class Doc
      * 获取当前系统所有的moduleId
      * @return array
      */
-    public function getModuleIds()
+    /*public function getModuleIds()
     {
         if ($this->moduleIds !== null) {
             return $this->moduleIds;
@@ -91,63 +81,93 @@ class Doc
             $this->moduleIds[] = $moduleId;
         }
         return $this->moduleIds;
-    }
+    }*/
+
+
+    /**
+     * @var ActiveController[]
+     */
+    private $_controllersList = [];
+
 
     /**
      * 获取当前系统所有模块下的所有Controller类
-     * @return array
+     * @return ActiveController[]
+     * @throws \yii\base\InvalidConfigException
      */
     public function getControllers()
     {
-        $controllers = [];
-        $moduleIds = $this->getModuleIds();
-        foreach ($moduleIds as $moduleId) {
-            $controllers[$moduleId] = $this->getControllersByModuleId($moduleId);
+        $this->loadModules(\Yii::$app);
+        foreach ($this->_modules as $module) {
+            $this->getControllersByModule($module);
         }
-        return $controllers;
+        return $this->_controllersList;
     }
 
     /**
-     *
-     * 获取某个模块下的所有Controller类
-     * @param $moduleId
-     * @return array
+     * @var Module[]
      */
-    public function getControllersByModuleId($moduleId)
-    {
-        $Module = $this->getModule($moduleId);
-        if (!$Module) {
-            return [];
-        }
 
+    /**
+     * @var Module[]
+     */
+    private $_modules = [];
+
+    /**
+     * 载入子模块
+     * @param Module $module
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function loadModules(Module $module)
+    {
+        $modules = $module->getModules();
+        if (!$modules) {
+            return;
+        }
+        foreach ($modules as $moduleId => $subModule) {
+            if (!($subModule instanceof Module)) {
+                $subModule = \Yii::createObject($subModule, [$moduleId, $module]);
+            }
+            $this->_modules[] = $subModule;
+            $this->loadModules($subModule);
+        }
+    }
+
+    /**
+     * 获取某个模块下的所有Controller类
+     * @param Module $Module
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function getControllersByModule(Module $module)
+    {
         $controllersList = [];
-        $namespace = $Module->controllerNamespace;
-        $path = $Module->getControllerPath();
+        $namespace = $module->controllerNamespace;
+        $path = $module->getControllerPath();
         $controllers = glob($path . '/*Controller.php');
 
         if ($controllers)
             foreach ($controllers as $ctrl) {
 
-
                 $ctrlName = basename(trim($ctrl, '.php'));
 
                 $class = $namespace . '\\' . $ctrlName;
 
-                $controllerInstance = $this->createControllerInstance($class, $moduleId);
+                $controllerInstance = $this->createControllerInstance($class, $module);
 
                 if (!$controllerInstance or !($controllerInstance instanceof ActiveController)) {
                     continue;
                 }
 
-                $controllersList[] = $class;
+                $controllersList[] = $controllerInstance;
             }
 
-        return array_merge($controllersList, $this->getControllersByModuleControllerMap($moduleId));
-        //return $controllersList;
+        $controllersList = array_merge($controllersList, $this->getControllersByModuleControllerMap($module));
+
+        $this->_controllersList = array_merge($controllersList, $this->_controllersList);        //return $controllersList;
 
     }
 
-    public function getModule($moduleId)
+    /*public function getModule($moduleId)
     {
         if (\Yii::$app->id == $moduleId) {
             $Module = \Yii::$app;
@@ -155,45 +175,42 @@ class Doc
             $Module = \Yii::$app->getModule($moduleId, true);
         }
         return $Module;
-    }
+    }*/
 
     /**
      * 获取module中指定controllerMap属性中的设置
-     * @param $moduleId
+     * @param Module $module
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
-    public function getControllersByModuleControllerMap($moduleId)
+    public function getControllersByModuleControllerMap(Module $module)
     {
-        $Module = $this->getModule($moduleId);
-        if (!$Module) {
-            return [];
-        }
 
         $controllersList = [];
 
-        if ($Module->controllerMap) foreach ($Module->controllerMap as $controllerId => $class) {
+        if ($module->controllerMap) foreach ($module->controllerMap as $controllerId => $class) {
             if (empty($class)) {
                 continue;
             }
 
-            if(is_array($class) and (!isset($class['class']) or empty($class['class']))){
+            if (is_array($class) and (!isset($class['class']) or empty($class['class']))) {
                 continue;
             }
 
-            if(is_array($class)){
+            if (is_array($class)) {
                 $controllerClassName = $class['class'];
             }
 
-            if(is_string($class)){
+            if (is_string($class)) {
                 $controllerClassName = $class;
             }
 
-            $controllerInstance = $this->createControllerInstance($controllerClassName, $moduleId, $controllerId);
+            $controllerInstance = $this->createControllerInstance($controllerClassName, $module, $controllerId);
             if (!$controllerInstance or !($controllerInstance instanceof ActiveController)) {
                 continue;
             }
 
-            $controllersList[] = $controllerInstance::className();
+            $controllersList[] = $controllerInstance;
 
         }
 
@@ -202,14 +219,14 @@ class Doc
 
     /**
      * 获取指定Controller的注释信息
-     * @param $controllerClass
-     * @param $moduleId
+     * @param ActiveController $controller
+     * @param Module $module
      * @return ControllerDoc
+     * @throws \ReflectionException
      */
-    public function getControllerDoc($controllerClass, $moduleId)
+    public function getControllerDoc(ActiveController $controller, Module $module)
     {
-        $controller = $this->createControllerInstance($controllerClass, $moduleId);
-        return new ControllerDoc($controller, $moduleId);
+        return new ControllerDoc($controller, $module);
     }
 
     private $_controllerInstances = [];
@@ -217,11 +234,12 @@ class Doc
     /**
      * 创建一个controller实例
      * @param $controllerClass
-     * @param $moduleId
+     * @param Module $module
      * @param null $controllerId
-     * @return ActiveController
+     * @return mixed
+     * @throws \yii\base\InvalidConfigException
      */
-    private function createControllerInstance($controllerClass, $moduleId, $controllerId = null)
+    private function createControllerInstance($controllerClass, Module $module, $controllerId = null)
     {
         $classArr = explode('\\', $controllerClass);
         $ctrlName = end($classArr);
@@ -231,13 +249,13 @@ class Doc
         }
 
         $id = $controllerClass;
-        if(isset($this->_controllerInstances[$id])){
+        if (isset($this->_controllerInstances[$id])) {
             return $this->_controllerInstances[$id];
         }
 
         $this->_controllerInstances[$id] = \Yii::createObject(
             $controllerClass,
-            [$controllerId, \Yii::$app->getModule($moduleId, true)]
+            [$controllerId, $module]
         );
 
         return $this->_controllerInstances[$id];
