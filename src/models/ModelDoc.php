@@ -14,7 +14,14 @@ class ModelDoc
 
     }
 
-    public static function comment($model)
+    public static function getTitle(Model $model){
+        $ref = new \ReflectionClass($model);
+        $comment = (String)$ref->getDocComment();
+        $comment = new Comment($comment);
+        return $comment->getSummary();
+    }
+
+    public static function comment(Model $model)
     {
         $doc = new static($model);
         $fields = $doc->fields();

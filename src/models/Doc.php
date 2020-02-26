@@ -253,7 +253,7 @@ class Doc
         $arr = explode('\\',$className);
         $name = end($arr);
         return [
-            'title' => '',
+            'title' => ModelDoc::getTitle(new $className),
             'name' => lcfirst($name),
             'comment' => ModelDoc::comment(new $className)
         ];
